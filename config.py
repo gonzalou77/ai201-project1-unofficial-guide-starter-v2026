@@ -33,17 +33,17 @@ CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks
 
 # ─── Retrieval (Milestone 4) ─────────────────────────────────────────────────
 
-TOP_K = 5               # how many chunks to pull back per question
+TOP_K = 4               # how many chunks to pull back per question
 
 # The relevance gate. If the best chunk is further away than this, the system
 # refuses to answer instead of handing the model thin material.
 #
 # LOWER IS BETTER: 0.3 is a close match, 0.9 is unrelated.
 #
-# 0.6 is a reasonable starting point, not a right answer. Milestone 4 has you
-# measure your own two groups of distances and put the cutoff in the gap.
-# Most corpora land somewhere between 0.45 and 0.75.
-THRESHOLD = 0.6
+# Measured on advice_threads: the 5 in-corpus questions' best distances ran
+# 0.2802-0.5061; the 5 OUT_OF_SCOPE questions' best distances ran 0.8189-0.9047.
+# 0.66 sits in the middle of that gap (~0.15 of headroom on either side).
+THRESHOLD = 0.66
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────

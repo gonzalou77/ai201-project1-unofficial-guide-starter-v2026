@@ -1,6 +1,6 @@
 # The Unofficial Guide
 
-<!-- Replace this line with your name and which corpus you picked. -->
+Louis Gonzalez — corpus: `advice_threads`
 
 > **This file is your submission.** Fill it in as you go — most sections get
 > written during the milestone that produces them, not at the end.
@@ -21,11 +21,16 @@
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
+This is a small retrieval-augmented question-answering system built on
+`advice_threads`, a corpus of 23 short student advice threads — a posted
+question plus several voted replies — covering things like commuting,
+printing quotas, study spots, internship timing, and what to buy before a
+first winter on campus. Ask it something specific ("will I need extra
+printing credits?", "is a bike worth it for a 20 minute walk commute?") and
+it retrieves the most relevant reply, grounds its answer in that text only,
+and names the thread it came from. Questions clearly outside the corpus
+(recipes, sports trivia, other universities) get refused before any model
+call is made, rather than answered by guessing.
 
 ## Chunking Strategy
 
@@ -44,76 +49,98 @@
 
 ## Sample Chunks
 
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
-
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
-
 ======================================================================
-Chunk 1  |  source: thread_bike_commute.txt#0  |  produced by: chunker.py::fallback_split
+Chunk 1  |  source: thread_bike_commute.txt#0  |  produced by: chunker.py::split_documents
 ======================================================================
 THREAD: Is a bike worth it for a 20 minute walk commute?
 
---- reply 1 (14 votes) ---
 Yeah. Cuts an 18 minute walk to about 6. The thing nobody mentions is storage — covered bike parking exists at three buildings and is full by 9am at all three.
 
---- reply 2 (9 votes) ---
-Counterpoint, I sold mine. Between November and March the paths are either icy or salted and salt destroys a drivetrain in one season.
+======================================================================
+Chunk 2  |  source: thread_first_gen.txt#1  |  produced by: chunker.py::split_documents
+======================================================================
+THREAD: Anything specific for first-generation students?
 
---- reply 3 (22 votes) ---
-Both true. I keep a cheap bike for September to November and walk the rest of the year. Total cost was about $120 for the bike and I don't care what happens to it.
+The thing I'd say: the unwritten rules are the hard part, not the coursework. Ask about the unwritten rules explicitly. People are happy to explain them and nobody volunteers them.
 
---- reply 4 (5 votes) ---
-If you do get one, the campus does free registration and it's the only reason I got mine back after it was taken.
+======================================================================
+Chunk 3  |  source: thread_laptop_specs.txt#2  |  produced by: chunker.py::split_documents
+======================================================================
+THREAD: How much laptop do I actually need for CS courses?
+
+I did two years on an 8GB machine and it was fine until the last project, at which point it very much wasn't. 16 is the answer.
+
+======================================================================
+Chunk 4  |  source: thread_parking.txt#1  |  produced by: chunker.py::split_documents
+======================================================================
+THREAD: Worth getting a parking permit?
+
+Street parking on Verrill is legal and free and unmarked, which is why half the upper years do it.
+
+======================================================================
+Chunk 5  |  source: thread_sleep_schedule.txt#1  |  produced by: chunker.py::split_documents
+======================================================================
+THREAD: Everyone says fix your sleep. Does it actually matter?
+
+The library being open until 2am is a trap. It's a resource, not a schedule.
 
 For each one, ask: could someone answer a question using only this,
-without reading what came before or after?
+without reading what came before or after? Yes for all five — each pairs the
+thread's question with exactly one reply, so there's one clear opinion per
+chunk with nothing cut off mid-sentence and nothing from an unrelated reply
+mixed in.
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
-
-**Question:**
+**Question:** Will I need to buy extra printing credits?
 
 **Answer:**
 
 ```
+For most people, the printing quota is enough, as $30 covers about 600 black and white pages. However, colour printing consumes the quota much faster because it costs eight times as much per page.
+
+Source: thread_printing.txt
 ```
 
 **My relevance cutoff:**
 
-<!-- The number you set in config.py, and how you got there.
-
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
+I set `THRESHOLD = 0.66` in `config.py`. My five in-corpus questions' best
+distances ran 0.2802–0.5061; my five `OUT_OF_SCOPE` questions' best distances
+ran 0.8189–0.9047. That's a wide, clean gap with no overlap, so I put the
+cutoff at the midpoint (0.5061 + 0.8189 all over 2 ≈ 0.66), which gives about
+0.15 of headroom on both sides — no real question comes close to being
+wrongly refused, and no out-of-scope question comes close to sneaking past
+the gate.
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| When do employers close their applications for internships? | Yes | 0.2802 |
+| How long would it take for a student to commute by bike? | Yes | 0.3616 |
+| I've never lived in a place that snows, what should I buy so that I am prepared? | Yes | 0.4259 |
+| Will I need to buy extra printing credits? | Yes | 0.4996 |
+| what is a study spot that does not push you out? | Yes | 0.5061 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.8189 |
+| How do I write a for loop in Rust? | No | 0.8606 |
+| Who won the 1994 World Cup? | No | 0.8982 |
+| What is the capital of Mongolia? | No | 0.8990 |
+| How do I change the oil in a diesel engine? | No | 0.9047 |
 
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
+**1.** I asked Claude why the fallback chunker produced a 2-character chunk
+(`thread_meal_plan_tier.txt#1`, just `"t."`). It came back with the exact
+cause: that document is 682 characters, under the 800-char chunk size, but
+the loop still takes a second, empty-ish window because `680 < 682`. I used
+that to decide against character-count chunking altogether — I wrote
+`split_documents` to split on the `--- reply N ---` markers instead, since
+that's a boundary these documents actually have.
 
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
-
-     Milestone 5. -->
-
-**1.**
-
-**2.**
+**2.** I asked Claude to compare retrieval at `top_k=4` vs `top_k=5` on my
+five test questions. It came back showing `k=5`'s extra slot never added a
+second correct chunk, only ever noise from an unrelated thread. I changed
+`TOP_K` from 5 to 4 because of that, and used the same distance numbers it
+measured to move `THRESHOLD` from the starter's 0.6 to 0.66, the midpoint of
+the actual gap.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
