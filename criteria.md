@@ -56,7 +56,7 @@ in at least 4 of 5 tries.
 ---
 
 ## 4. Something about your chunks
-
+In 9 out of 10 of my prompts, I will get a message stating that the chunks are of a sufficient size.
 <!-- YOU WRITE THIS ONE.
 
      How would you know if your chunks were the right size? Name something
@@ -72,13 +72,13 @@ in at least 4 of 5 tries.
 
 
 **Why this target:**
-
+<!-- We want to write efficient prompts and not hit the daily limit quickly. Using this criteria allows me to determine what topics may require larger chunks  -->
 
 
 ---
 
 ## 5. Your choice
-
+For at least 4 of 5 of my questions, I would get a message stating that "which makes sense for the university".
 <!-- YOU WRITE THIS ONE TOO.
 
      Pick something you actually care about getting right. It could be about
@@ -90,7 +90,7 @@ in at least 4 of 5 tries.
 
 
 **Why this target:**
-
+<!-- It is important to know that the answer is relevant to this university and not lead students astray with information from another university -->
 
 
 ---
