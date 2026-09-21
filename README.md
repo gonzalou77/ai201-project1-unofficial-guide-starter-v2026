@@ -34,18 +34,35 @@ call is made, rather than answered by guessing.
 
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size:** structural — one reply per chunk, not a fixed character count.
+**Overlap:** none.
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
+I started by running the starter's fallback chunker (fixed 800-char windows,
+120-char overlap) against `advice_threads` and reading its own summary line:
+26 chunks from 23 documents, average 487 characters, shortest 2. Every
+document in this corpus is a short thread (317–793 characters) followed by
+several `--- reply N (votes) ---` replies, so an 800-character window almost
+never cuts anything — and when a document happened to land between
+`chunk_size - overlap` (680) and `chunk_size` (800), the loop fired a second,
+useless time and produced a tiny leftover fragment
+(`thread_meal_plan_tier.txt#1`, 2 characters, just `"t."`). That's not
+"uneven splitting," it's a loop-condition edge case, and it told me a
+character count was the wrong tool for these documents regardless of what
+number I picked.
 
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
+Reading the documents themselves made the real unit obvious: each reply is
+one independent, self-contained opinion (often contradicting the reply next
+to it — replies range 8–195 characters, average 122), so I split on the
+reply markers instead and prepended the thread's title to each reply so it
+still reads as a complete thought on its own. No overlap is needed because
+the boundaries are already natural rather than arbitrary — overlap exists to
+avoid severing a sentence mid-window, and there's no window here to sever.
 
-     Milestone 3. -->
+I didn't tune `CHUNK_SIZE`/`CHUNK_OVERLAP` at all — checking document lengths
+first (all 23 are 317–793 characters, well under 800) showed no character
+count would ever land on the boundary between two different people's advice,
+so I replaced the character-window approach in `split_documents` rather than
+retune its numbers.
 
 ## Sample Chunks
 
